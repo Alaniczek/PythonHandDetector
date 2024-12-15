@@ -1,3 +1,6 @@
+#FunFact
+Cała aplikacja jest napisana przez AI 
+Same prompty :D
 # System Detekcji Gestów Dłoni
 
 ## Opis
