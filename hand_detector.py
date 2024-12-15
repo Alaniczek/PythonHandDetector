@@ -1,112 +1,152 @@
-# ====== IMPORTOWANIE BIBLIOTEK ======
-# OpenCV - biblioteka do przetwarzania obrazu
-# cv2 pozwala na:
-# - odczyt obrazu z kamery
-# - wyświetlanie obrazu
-# - rysowanie na obrazie (linie, tekst)
-# - przetwarzanie kolorów
+# ============= IMPORTOWANIE BIBLIOTEK =============
+# Każda biblioteka to zestaw gotowych funkcji, które możemy wykorzystać
+# Dzięki nim nie musimy pisać wszystkiego od zera
+
+# OpenCV (Computer Vision - Widzenie Komputerowe)
+# To jak oczy naszego programu - pozwala "widzieć" przez kamerę
+# Biblioteka cv2 umożliwia:
+# - włączenie kamery i pobieranie z niej obrazu
+# - wyświetlanie okna z podglądem kamery
+# - rysowanie na obrazie (linie, tekst, kształty)
+# - zmianę kolorów, rozmiaru obrazu itp.
 import cv2
 
-# MediaPipe - biblioteka Google do wykrywania ciała/twarzy/dłoni
-# mp pozwala na:
-# - wykrywanie punktów charakterystycznych dłoni
-# - śledzenie ruchów dłoni
-# - rozpoznawanie gestów
+# MediaPipe - zaawansowana biblioteka od Google
+# To jak mózg rozpoznający kształty - tutaj konkretnie dłonie
+# Pozwala na:
+# - znalezienie dłoni w obrazie
+# - określenie położenia palców (21 punktów na dłoni)
+# - śledzenie ruchów dłoni w czasie rzeczywistym
+# Używamy jej, bo sama jest już wytrenowana do rozpoznawania dłoni
 import mediapipe as mp
 
-# NumPy - biblioteka do obliczeń numerycznych
-# np pozwala na:
-# - operacje na tablicach
-# - obliczenia matematyczne
-# - przekształcenia danych
+# NumPy - biblioteka do obliczeń matematycznych
+# To jak kalkulator naszego programu
+# Przydaje się do:
+# - szybkich obliczeń na wielu liczbach naraz
+# - przekształcania danych z kamery
+# - operacji matematycznych (średnie, odległości)
 import numpy as np
 
-# Math - biblioteka matematyczna
-# math pozwala na:
-# - funkcje matematyczne (sqrt, pow)
-# - stałe matematyczne (pi)
+# Math - podstawowa biblioteka matematyczna
+# To jak prosty kalkulator - ma podstawowe funkcje matematyczne
+# Używamy do:
+# - pierwiastków kwadratowych (sqrt)
+# - potęgowania (pow)
+# - liczby PI i innych stałych matematycznych
 import math
 
-# Serial - biblioteka do komunikacji szeregowej
-# serial pozwala na:
-# - komunikację z Arduino
-# - wysyłanie i odbieranie danych przez USB
+# Serial - biblioteka do komunikacji z Arduino
+# To jak tłumacz między Pythonem a Arduino
+# Pozwala na:
+# - znalezienie podłączonego Arduino
+# - wysyłanie komend do Arduino
+# - odbieranie danych z Arduino
 import serial
-import serial.tools.list_ports  # Narzędzia do znajdowania portów COM
+import serial.tools.list_ports  # Dodatkowe narzędzia do znajdowania Arduino
 
-# Time - biblioteka do operacji czasowych
-# time pozwala na:
-# - opóźnienia w programie
-# - pomiar czasu
+# Time - biblioteka do operacji związanych z czasem
+# To jak zegarek programu
+# Używamy do:
+# - wprowadzania opóźnień (czekaj X sekund)
+# - mierzenia czasu wykonania operacji
 import time
 
-# ====== FUNKCJE POMOCNICZE ======
+# ============= FUNKCJE POMOCNICZE =============
 
 def find_arduino_port():
     """
-    Znajduje port COM, na którym jest Arduino
+    Szuka podłączonego Arduino w systemie
     
     Jak to działa:
-    1. Pobiera listę wszystkich portów COM
-    2. Szuka portu z nazwą zawierającą 'Arduino' lub podobne
-    3. Zwraca nazwę znalezionego portu lub None
+    1. Sprawdza wszystkie podłączone urządzenia przez USB
+    2. Szuka takiego, które w nazwie ma 'Arduino' lub podobne
+    3. Jeśli znajdzie - zwraca nazwę portu (np. 'COM3')
+    4. Jeśli nie znajdzie - zwraca None (nic)
+    
+    Po co to robimy:
+    - Arduino może być podłączone do różnych portów (COM3, COM4 itd.)
+    - Zamiast zgadywać, program sam znajduje właściwy port
+    - Dzięki temu użytkownik nie musi nic ustawiać ręcznie
     
     Returns:
         str: nazwa portu COM (np. 'COM3') lub None jeśli nie znaleziono
     """
-    ports = list(serial.tools.list_ports.comports())  # Lista wszystkich portów
+    # Lista wszystkich podłączonych urządzeń
+    ports = list(serial.tools.list_ports.comports())
+    
+    # Sprawdzamy każde urządzenie
     for port in ports:
         # Szukamy charakterystycznych nazw dla Arduino
+        # Arduino może się pokazać jako:
+        # - "Arduino Uno"
+        # - "CH340" (nazwa układu USB używanego w niektórych Arduino)
+        # - "USB Serial" (ogólna nazwa urządzeń szeregowych)
         if 'Arduino' in port.description or 'CH340' in port.description or 'USB Serial' in port.description:
             return port.device
+    # Jeśli nic nie znaleźliśmy - zwracamy None
     return None
 
-# ====== INICJALIZACJA ARDUINO ======
-# Próbujemy nawiązać połączenie z Arduino
-arduino = None  # Zmienna do przechowywania połączenia z Arduino
-try:
-    # Automatyczne wykrywanie portu Arduino
+# ============= INICJALIZACJA ARDUINO =============
+# To jak przygotowanie komunikacji z Arduino
+arduino = None  # Na początku nie mamy połączenia
+
+try:  # Próbujemy się połączyć (try - gdyby coś poszło nie tak)
+    # Szukamy Arduino
     arduino_port = find_arduino_port()
+    
+    # Jeśli znaleźliśmy Arduino
     if arduino_port:
         print(f"Znaleziono Arduino na porcie: {arduino_port}")
         # Otwieramy połączenie:
-        # - prędkość 9600 baudów (musi być taka sama w Arduino)
-        # - timeout 1 sekunda (maksymalny czas oczekiwania na dane)
+        # - prędkość 9600 bodów (taka sama musi być ustawiona w Arduino)
+        # - timeout 1s (maksymalny czas czekania na odpowiedź)
         arduino = serial.Serial(arduino_port, 9600, timeout=1)
-        time.sleep(2)  # Czekamy 2 sekundy na zresetowanie Arduino
+        time.sleep(2)  # Czekamy 2 sekundy - Arduino resetuje się po połączeniu
         print("Połączono z Arduino")
     else:
         print("Nie znaleziono Arduino! Sprawdź połączenie.")
-except Exception as e:
+except Exception as e:  # Jeśli wystąpił jakiś błąd
     print(f"Błąd podczas łączenia z Arduino: {e}")
     print("Program będzie działał bez komunikacji z płytką.")
-    arduino = None
+    arduino = None  # Resetujemy zmienną - działamy bez Arduino
 
-# ====== INICJALIZACJA MEDIAPIPE ======
-# Moduł do detekcji dłoni z MediaPipe
+# ============= INICJALIZACJA MEDIAPIPE =============
+# Przygotowanie systemu rozpoznawania dłoni
+
+# Tworzymy detektor dłoni
 mp_hands = mp.solutions.hands
 
-# Konfiguracja detektora dłoni
+# Konfigurujemy detektor:
 hands = mp_hands.Hands(
     static_image_mode=False,  # False = tryb wideo (szybszy, ale mniej dokładny)
-    max_num_hands=1,          # Wykrywanie maksymalnie jednej dłoni (więcej = wolniej)
-    min_detection_confidence=0.5,  # Próg pewności dla wykrycia dłoni (0-1)
-    min_tracking_confidence=0.5    # Próg pewności dla śledzenia dłoni (0-1)
+    max_num_hands=1,          # Szukamy tylko jednej dłoni (więcej = wolniej)
+    min_detection_confidence=0.5,  # Pewność że to dłoń (0.5 = 50%)
+    min_tracking_confidence=0.5    # Pewność podczas śledzenia ruchu
 )
 
-# Moduł do rysowania punktów i linii
+# Narzędzie do rysowania punktów i linii
 mp_draw = mp.solutions.drawing_utils
 
-# ====== ZMIENNE GLOBALNE ======
-# Zmienna do przechowywania aktualnego rozkazu
-RozkazDrona = 0  # 0 = brak rozkazu, 1 = pięść, 2 = gest peace
+# ============= ZMIENNE GLOBALNE =============
+# Zmienne dostępne w całym programie
+
+# Aktualny rozkaz dla drona
+RozkazDrona = 0  # 0 = nic nie rób, 1 = pięść, 2 = znak V (peace)
 
 # Poprzedni rozkaz - potrzebny do wykrycia zmiany
+# (wysyłamy do Arduino tylko gdy rozkaz się zmieni)
 PoprzedniRozkaz = 0
 
-# ====== STAŁE - PUNKTY CHARAKTERYSTYCZNE DŁONI ======
+# ============= PUNKTY NA DŁONI =============
 # MediaPipe wykrywa 21 punktów na dłoni (0-20)
-# Każdy palec ma 4 punkty (0 = podstawa, 1-3 = stawy, 4 = czubek)
+# Każdy palec ma 4 punkty:
+# - punkt 0: podstawa (gdzie palec łączy się z dłonią)
+# - punkty 1-3: stawy palca
+# - punkt 4: czubek palca
+
+# Definiujemy punkty dla każdego palca
+# (będziemy ich używać do sprawdzania czy palec jest wyprostowany)
 THUMB_POINTS = [1, 2, 3, 4]        # Kciuk
 INDEX_POINTS = [5, 6, 7, 8]        # Wskazujący
 MIDDLE_POINTS = [9, 10, 11, 12]    # Środkowy
@@ -115,160 +155,209 @@ PINKY_POINTS = [17, 18, 19, 20]    # Mały
 
 def send_to_arduino(command):
     """
-    Wysyła komendę do Arduino
+    Wysyła rozkaz do Arduino
     
     Jak to działa:
     1. Sprawdza czy Arduino jest podłączone
-    2. Konwertuje liczbę na bajty
+    2. Zamienia liczbę (0,1,2) na format który rozumie Arduino
     3. Wysyła przez port szeregowy
+    
+    Po co to robimy:
+    - Arduino musi wiedzieć jaki gest pokazuje użytkownik
+    - Wysyłamy liczby: 0 (brak gestu), 1 (pięść), 2 (peace)
+    - Arduino może na tej podstawie wykonać różne akcje
     
     Args:
         command: liczba 0-2 reprezentująca rozkaz
-            0 = brak rozkazu
-            1 = pięść
-            2 = gest peace
+            0 = brak rozkazu/reset
+            1 = wykryto pięść
+            2 = wykryto gest peace
     """
+    # Jeśli Arduino jest podłączone
     if arduino is not None:
         try:
-            arduino.write(bytes([command]))  # Konwersja liczby na bajty i wysłanie
+            # Wysyłamy komendę
+            # bytes([command]) - zamiana liczby na format zrozumiały dla Arduino
+            arduino.write(bytes([command]))
         except:
             print("Błąd podczas wysyłania do Arduino!")
 
 def calculate_distance(p1, p2, img):
     """
     Oblicza odległość między dwoma punktami i rysuje linię
+    
+    Jak to działa:
+    1. Zamienia współrzędne z formatu MediaPipe (0-1) na piksele
+    2. Rysuje linię między punktami
+    3. Oblicza odległość matematyczną między punktami
+    
+    Po co to robimy:
+    - Chcemy widzieć połączenia między punktami na dłoni
+    - Potrzebujemy znać odległości między palcami
+    
     Args:
-        p1, p2: punkty w formacie MediaPipe (x,y są znormalizowane do 0-1)
-        img: obraz na którym będzie rysowana linia
+        p1, p2: punkty z MediaPipe (x,y w zakresie 0-1)
+        img: obraz na którym rysujemy
     Returns:
-        distance: odległość między punktami w pikselach
+        distance: odległość w pikselach
     """
-    # Konwersja współrzędnych znormalizowanych na piksele
+    # Konwersja współrzędnych na piksele
+    # MediaPipe używa współrzędnych 0-1, mnożymy przez rozmiar obrazu
     x1, y1 = int(p1.x * img.shape[1]), int(p1.y * img.shape[0])
     x2, y2 = int(p2.x * img.shape[1]), int(p2.y * img.shape[0])
     
-    # Rysowanie czerwonej linii między punktami
+    # Rysowanie czerwonej linii
+    # (0,0,255) to kolor RGB - czerwony
+    # 2 to grubość linii
     cv2.line(img, (x1, y1), (x2, y2), (0, 0, 255), 2)
     
-    # Obliczanie odległości euklidesowej
+    # Obliczanie odległości (twierdzenie Pitagorasa)
     distance = math.sqrt((x2-x1)**2 + (y2-y1)**2)
     return distance
 
 def is_finger_up(finger_points, hand_landmarks):
     """
-    Sprawdza czy palec jest wyprostowany (uniesiony do góry)
-    Args:
-        finger_points: lista indeksów punktów dla danego palca
-        hand_landmarks: punkty charakterystyczne dłoni z MediaPipe
-    Returns:
-        bool: True jeśli palec jest wyprostowany, False w przeciwnym razie
-    """
-    # Pobieramy punkty palca (podstawa i czubek)
-    base = hand_landmarks.landmark[finger_points[0]]
-    tip = hand_landmarks.landmark[finger_points[3]]
+    Sprawdza czy palec jest wyprostowany (podniesiony do góry)
     
-    # Jeśli czubek palca jest wyżej (ma mniejszą współrzędną y) niż podstawa
-    # to palec jest wyprostowany (pamiętaj, że w obrazie 0,0 jest w lewym górnym rogu)
+    Jak to działa:
+    1. Bierze punkt podstawy palca i jego czubek
+    2. Porównuje ich pozycję w pionie (współrzędna y)
+    3. Jeśli czubek jest wyżej niż podstawa = palec wyprostowany
+    
+    Po co to robimy:
+    - Chcemy wiedzieć które palce są wyprostowane
+    - Na tej podstawie rozpoznajemy gesty (np. znak V)
+    
+    Args:
+        finger_points: lista punktów danego palca
+        hand_landmarks: wszystkie punkty dłoni z MediaPipe
+    Returns:
+        bool: True jeśli palec wyprostowany, False jeśli zgięty
+    """
+    # Pobieramy punkt podstawy i czubka palca
+    base = hand_landmarks.landmark[finger_points[0]]  # Podstawa
+    tip = hand_landmarks.landmark[finger_points[3]]   # Czubek
+    
+    # Sprawdzamy czy czubek jest wyżej niż podstawa
+    # UWAGA: W obrazie y=0 jest na górze, a y rośnie w dół
+    # Dlatego tip.y < base.y oznacza że czubek jest wyżej
     return tip.y < base.y
 
 def detect_gesture(hand_landmarks):
     """
-    Wykrywa gesty dłoni i ustawia RozkazDrona
+    Wykrywa gest dłoni i ustawia odpowiedni rozkaz
+    
+    Jak to działa:
+    1. Sprawdza pozycję wszystkich palców
+    2. Sprawdza odległości między punktami
+    3. Na podstawie układu palców określa gest
+    4. Ustawia odpowiedni RozkazDrona
+    
+    Po co to robimy:
+    - Chcemy rozpoznać co pokazuje użytkownik
+    - Na podstawie gestów sterujemy dronem
+    
     Args:
-        hand_landmarks: punkty charakterystyczne dłoni z MediaPipe
+        hand_landmarks: punkty dłoni z MediaPipe
     Returns:
-        gesture: nazwa wykrytego gestu
+        str: nazwa wykrytego gestu
     """
-    global RozkazDrona, PoprzedniRozkaz  # Używamy zmiennych globalnych
+    global RozkazDrona, PoprzedniRozkaz
     
-    # Sprawdzamy pozycje palców
-    index_up = is_finger_up(INDEX_POINTS, hand_landmarks)    # Czy wskazujący jest wyprostowany
-    middle_up = is_finger_up(MIDDLE_POINTS, hand_landmarks)  # Czy środkowy jest wyprostowany
-    ring_up = is_finger_up(RING_POINTS, hand_landmarks)      # Czy serdeczny jest wyprostowany
-    pinky_up = is_finger_up(PINKY_POINTS, hand_landmarks)    # Czy mały jest wyprostowany
+    # Sprawdzamy które palce są wyprostowane
+    index_up = is_finger_up(INDEX_POINTS, hand_landmarks)    # Wskazujący
+    middle_up = is_finger_up(MIDDLE_POINTS, hand_landmarks)  # Środkowy
+    ring_up = is_finger_up(RING_POINTS, hand_landmarks)      # Serdeczny
+    pinky_up = is_finger_up(PINKY_POINTS, hand_landmarks)    # Mały
     
-    # Pobieranie pozycji końcówek palców
-    thumb_tip = hand_landmarks.landmark[4]   # Kciuk - końcówka
-    index_tip = hand_landmarks.landmark[8]   # Wskazujący - końcówka
-    middle_tip = hand_landmarks.landmark[12] # Środkowy - końcówka
-    ring_tip = hand_landmarks.landmark[16]   # Serdeczny - końcówka
-    pinky_tip = hand_landmarks.landmark[20]  # Mały - końcówka
+    # Pobieramy pozycje czubków palców
+    thumb_tip = hand_landmarks.landmark[4]   # Kciuk
+    index_tip = hand_landmarks.landmark[8]   # Wskazujący
+    middle_tip = hand_landmarks.landmark[12] # Środkowy
+    ring_tip = hand_landmarks.landmark[16]   # Serdeczny
+    pinky_tip = hand_landmarks.landmark[20]  # Mały
     
-    # Pobieranie pozycji podstawy dłoni (nadgarstek)
+    # Punkt podstawy dłoni (nadgarstek)
     wrist = hand_landmarks.landmark[0]
     
-    # Lista końcówek palców do obliczenia średniej odległości
+    # Lista wszystkich czubków palców
     finger_tips = [thumb_tip, index_tip, middle_tip, ring_tip, pinky_tip]
     
-    # Obliczanie średniej odległości palców od nadgarstka
+    # Obliczamy średnią odległość palców od nadgarstka
     distances = []
     for tip in finger_tips:
+        # Dla każdego palca liczymy odległość od nadgarstka
         dist = math.sqrt((tip.x - wrist.x)**2 + (tip.y - wrist.y)**2)
         distances.append(dist)
     
+    # Średnia odległość
     avg_distance = sum(distances) / len(distances)
     
     # Zapamiętujemy poprzedni rozkaz
     PoprzedniRozkaz = RozkazDrona
     
-    # Klasyfikacja gestów i ustawienie RozkazDrona
-    if avg_distance < 0.2:  # Jeśli palce są blisko nadgarstka - pięść
-        RozkazDrona = 1  # Ustawienie rozkazu na 1 gdy wykryto pięść
+    # Rozpoznajemy gest
+    if avg_distance < 0.2:  # Mała odległość = zaciśnięta pięść
+        RozkazDrona = 1
         gesture = "Pięść"
-    elif index_up and middle_up and not ring_up and not pinky_up:  # Tylko wskazujący i środkowy wyprostowane
-        RozkazDrona = 2  # Ustawienie rozkazu na 2 dla gestu "peace"
+    elif index_up and middle_up and not ring_up and not pinky_up:  # Znak V (peace)
+        RozkazDrona = 2
         gesture = "Peace"
-    else:
-        RozkazDrona = 0  # Reset rozkazu gdy dłoń jest w innej pozycji
+    else:  # Każdy inny układ palców
+        RozkazDrona = 0
         gesture = "Inna pozycja"
     
-    # Jeśli rozkaz się zmienił, wysyłamy go do Arduino
+    # Jeśli rozkaz się zmienił - wysyłamy do Arduino
     if RozkazDrona != PoprzedniRozkaz:
         send_to_arduino(RozkazDrona)
     
     return gesture
 
-# Inicjalizacja kamery (0 oznacza domyślną kamerę)
+# ============= GŁÓWNA PĘTLA PROGRAMU =============
+
+# Włączamy kamerę (0 = domyślna kamera)
 cap = cv2.VideoCapture(0)
 
-# Główna pętla programu
+# Nieskończona pętla - program działa aż do naciśnięcia 'q'
 while True:
-    # Odczyt klatki z kamery
+    # Pobieramy klatkę z kamery
     success, img = cap.read()
     if not success:
         print("Nie można odczytać obrazu z kamery")
         break
     
-    # Odbicie obrazu poziomo dla bardziej naturalnego widoku
+    # Odbijamy obraz poziomo - będzie działać jak lustro
     img = cv2.flip(img, 1)
     
-    # Konwersja obrazu z BGR na RGB (wymagane przez MediaPipe)
+    # Konwertujemy obraz z BGR na RGB
+    # (MediaPipe wymaga RGB, a OpenCV używa BGR)
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     
-    # Detekcja dłoni
+    # Wykrywamy dłonie w obrazie
     results = hands.process(img_rgb)
     
-    # Jeśli wykryto dłoń
+    # Jeśli wykryto jakieś dłonie
     if results.multi_hand_landmarks:
+        # Dla każdej wykrytej dłoni
         for hand_landmarks in results.multi_hand_landmarks:
-            # Rysowanie punktów charakterystycznych dłoni
+            # Rysujemy punkty i połączenia
             mp_draw.draw_landmarks(
                 img,
                 hand_landmarks,
                 mp_hands.HAND_CONNECTIONS
             )
             
-            # Wykrywanie gestu
+            # Wykrywamy gest
             gesture = detect_gesture(hand_landmarks)
             
-            # Obliczanie odległości między kciukiem a palcem wskazującym
+            # Mierzymy odległość między kciukiem a palcem wskazującym
             thumb_index_distance = calculate_distance(
                 hand_landmarks.landmark[4],  # Kciuk
-                hand_landmarks.landmark[8],  # Palec wskazujący
+                hand_landmarks.landmark[8],  # Wskazujący
                 img
             )
             
-            # Wyświetlanie informacji na ekranie
+            # Wyświetlamy informacje na ekranie
             cv2.putText(img, f"Gest: {gesture}", (10, 30),
                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv2.putText(img, f"Odleglosc kciuk-wskazujacy: {int(thumb_index_distance)}px",
@@ -276,26 +365,25 @@ while True:
             cv2.putText(img, f"RozkazDrona: {RozkazDrona}", (10, 110),
                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     else:
-        # Jeśli nie wykryto dłoni, resetujemy RozkazDrona
+        # Jeśli nie wykryto dłoni
         PoprzedniRozkaz = RozkazDrona
         RozkazDrona = 0
         if RozkazDrona != PoprzedniRozkaz:
             send_to_arduino(RozkazDrona)
-        # Wyświetlamy aktualną wartość RozkazDrona
+        # Wyświetlamy aktualny rozkaz (0)
         cv2.putText(img, f"RozkazDrona: {RozkazDrona}", (10, 110),
                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
-    # Wyświetlenie obrazu
+    # Wyświetlamy obraz
     cv2.imshow("Hand Detector", img)
     
-    # Wyjście z programu po naciśnięciu 'q'
+    # Czekamy na klawisz
+    # Jeśli naciśnięto 'q' - kończymy program
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# Zamknięcie połączenia z Arduino
+# Sprzątamy po zakończeniu
 if arduino is not None:
-    arduino.close()
-
-# Zwolnienie zasobów
-cap.release()
-cv2.destroyAllWindows() 
+    arduino.close()  # Zamykamy połączenie z Arduino
+cap.release()  # Zwalniamy kamerę
+cv2.destroyAllWindows()  # Zamykamy wszystkie okna 
