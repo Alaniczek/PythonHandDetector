@@ -1,6 +1,7 @@
 # FunFact
-Cała aplikacja jest napisana przez AI 
-Same prompty :D
+Cała aplikacja jest napisana przez AI, niemal brak użycia własnego kodu
+Same umiejętności promptowania :D
+(chyba AI zabiera mi prace 🤪)
 # System Detekcji Gestów Dłoni
 
 ## Opis
