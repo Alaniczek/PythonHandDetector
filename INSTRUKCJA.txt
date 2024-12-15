@@ -1,0 +1,98 @@
+SZCZEGÓŁOWA INSTRUKCJA OBSŁUGI SYSTEMU DETEKCJI GESTÓW
+
+1. INSTALACJA ŚRODOWISKA
+-----------------------
+a) Instalacja Pythona:
+   - Pobierz Python 3.10.9 ze strony: https://www.python.org/downloads/release/python-3109/
+   - Uruchom instalator
+   - KONIECZNIE zaznacz opcję "Add Python to PATH"
+   - Wybierz "Install Now"
+   - Poczekaj na zakończenie instalacji
+
+b) Sprawdzenie instalacji:
+   - Otwórz cmd (Win + R, wpisz "cmd", Enter)
+   - Wpisz: python --version
+   - Powinieneś zobaczyć: Python 3.10.9
+
+c) Instalacja bibliotek:
+   - Otwórz cmd
+   - Wpisz kolejno:
+     python -m pip install opencv-python==4.8.0.74
+     python -m pip install mediapipe==0.10.20
+     python -m pip install numpy==1.24.3
+     python -m pip install pyserial
+
+2. URUCHOMIENIE PROGRAMU BEZ ARDUINO
+----------------------------------
+a) Przygotowanie:
+   - Upewnij się, że masz podłączoną kamerę internetową
+   - Skopiuj wszystkie pliki do wybranego folderu
+
+b) Uruchomienie:
+   - Otwórz cmd
+   - Przejdź do folderu z programem (komenda: cd ścieżka_do_folderu)
+   - Wpisz: python hand_detector.py
+
+c) Obsługa:
+   - Program pokaże obraz z kamery
+   - Pokaż dłoń przed kamerą
+   - Program wyświetli:
+     * Wykryty gest
+     * Odległość między palcami
+     * Aktualny rozkaz (0, 1 lub 2)
+   - Aby zakończyć, naciśnij 'q'
+
+3. URUCHOMIENIE Z ARDUINO (OPCJONALNE)
+------------------------------------
+a) Instalacja Arduino IDE:
+   - Pobierz i zainstaluj Arduino IDE ze strony: https://www.arduino.cc/en/software
+
+b) Wgranie kodu na Arduino:
+   - Podłącz Arduino przez USB
+   - Otwórz Arduino IDE
+   - Otwórz plik drone_controller.ino
+   - Wybierz właściwą płytkę (Tools -> Board)
+   - Wybierz port COM (Tools -> Port)
+   - Kliknij przycisk Upload (strzałka)
+
+c) Sprawdzenie komunikacji:
+   - Otwórz Serial Monitor w Arduino IDE
+   - Ustaw prędkość na 9600 baud
+   - Powinieneś zobaczyć komunikat startowy
+
+d) Uruchomienie całego systemu:
+   - Zostaw Arduino podłączone
+   - Uruchom program Python jak w punkcie 2
+   - Program automatycznie wykryje Arduino
+   - W Serial Monitor będą wyświetlane otrzymane komendy
+
+4. ROZWIĄZYWANIE PROBLEMÓW
+-------------------------
+a) Program nie widzi kamery:
+   - Sprawdź, czy kamera jest podłączona
+   - Sprawdź, czy inne programy nie używają kamery
+   - Spróbuj ponownie uruchomić komputer
+
+b) Błędy bibliotek:
+   - Upewnij się, że zainstalowałeś wszystkie biblioteki
+   - Spróbuj ponownie zainstalować biblioteki
+
+c) Program nie widzi Arduino:
+   - Sprawdź połączenie USB
+   - Sprawdź, czy kod został poprawnie wgrany
+   - Sprawdź numer portu COM w Menedżerze urządzeń
+
+5. GESTY I KOMENDY
+-----------------
+Program rozpoznaje następujące gesty:
+- Rozkaz 0: Otwarta dłoń lub brak dłoni w kadrze
+- Rozkaz 1: Zaciśnięta pięść
+- Rozkaz 2: Gest "peace" (wskazujący i środkowy palec uniesione)
+
+6. WSPARCIE TECHNICZNE
+---------------------
+W razie problemów:
+1. Sprawdź dokumentację w pliku README.md
+2. Upewnij się, że wykonałeś wszystkie kroki instalacji
+3. Sprawdź sekcję rozwiązywania problemów
+4. Sprawdź, czy masz najnowsze wersje wszystkich plików 

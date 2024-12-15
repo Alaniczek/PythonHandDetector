@@ -1,0 +1,95 @@
+USTAWIENIA I PROMPTY DLA CURSOR AI
+
+1. PODSTAWOWE USTAWIENIA AI
+--------------------------
+- Język: Polski
+- Tryb: Instruktor kodowania
+- Poziom szczegółowości: Wysoki
+- Styl komunikacji: Przyjazny, ale profesjonalny
+
+2. PROMPTY DO KOPIOWANIA
+------------------------
+
+a) Inicjalizacja AI jako instruktora:
+```
+Jesteś instruktorem kodowania, stworzonym, aby pomóc i prowadzić mnie w nauce programowania. 
+Twoim głównym celem jest pomoc w zrozumieniu kodu który piszesz, programowania, najlepszych praktyk 
+i umiejętności rozwiązywania problemów podczas pisania kodu. Zawsze zakładaj, że jestem początkującym z 
+ograniczoną wiedzą na temat programowania. Dlatego każdy element kodu rozbijaj na kroki i elementy, 
+jasno tłumacząc co się dzieje.
+```
+
+b) Prośba o wyjaśnienie kodu:
+```
+Proszę wyjaśnij mi dokładnie, krok po kroku, co robi ten kod. Użyj prostych słów i przykładów.
+```
+
+c) Prośba o modyfikację kodu:
+```
+Chcę zmodyfikować kod, aby [cel]. Pomóż mi to zrobić, wyjaśniając każdą zmianę.
+```
+
+d) Prośba o debugowanie:
+```
+Mam problem z kodem: [opis problemu]. Pomóż mi znaleźć i naprawić błąd, wyjaśniając co było nie tak.
+```
+
+3. ZALECANE PRAKTYKI
+-------------------
+- Zawsze proś o szczegółowe wyjaśnienia
+- Pytaj o każdy niezrozumiały element
+- Proś o przykłady dla trudniejszych koncepcji
+- Informuj AI o poziomie swojego zrozumienia
+
+4. SPECYFICZNE PROMPTY DLA TEGO PROJEKTU
+--------------------------------------
+
+a) Dodawanie nowych gestów:
+```
+Chcę dodać nowy gest [opis gestu] do systemu. Jak mogę to zrobić?
+```
+
+b) Modyfikacja Arduino:
+```
+Chcę dodać nową funkcjonalność do Arduino: [opis]. Jak mogę to zaimplementować?
+```
+
+c) Dostosowanie parametrów:
+```
+Chcę dostosować [parametr] w systemie. Jakie są zalecane wartości i jak mogę je zmienić?
+```
+
+5. WSKAZÓWKI DO PRACY Z AI
+-------------------------
+- Zadawaj konkretne pytania
+- Proś o wyjaśnienie każdego niejasnego terminu
+- Informuj AI o swoim poziomie wiedzy
+- Proś o alternatywne rozwiązania
+- Pytaj o najlepsze praktyki
+
+6. PRZYKŁADOWE SCENARIUSZE UŻYCIA
+-------------------------------
+a) Dodawanie nowego gestu:
+```
+Chcę dodać nowy gest - gdy wszystkie palce są rozłożone, ustaw RozkazDrona na 3. 
+Jak mogę to zaimplementować?
+```
+
+b) Modyfikacja wyświetlania:
+```
+Chcę zmienić sposób wyświetlania informacji na ekranie. 
+Jak mogę dostosować tekst i jego położenie?
+```
+
+c) Debugowanie:
+```
+Program nie wykrywa prawidłowo gestu peace. 
+Jak mogę sprawdzić i poprawić warunki wykrywania tego gestu?
+```
+
+7. PRZYDATNE KOMENDY
+-------------------
+- Sprawdzenie wersji: python --version
+- Instalacja bibliotek: python -m pip install [nazwa]
+- Uruchomienie programu: python hand_detector.py
+- Aktualizacja pip: python -m pip install --upgrade pip 
