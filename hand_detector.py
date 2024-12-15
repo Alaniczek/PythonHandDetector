@@ -90,6 +90,7 @@ def find_arduino_port():
 # ============= INICJALIZACJA ARDUINO =============
 # To jak przygotowanie komunikacji z Arduino
 arduino = None  # Na początku nie mamy połączenia
+arduino_status = "False"  # Status połączenia z Arduino
 
 try:  # Próbujemy się połączyć (try - gdyby coś poszło nie tak)
     # Szukamy Arduino
@@ -104,6 +105,7 @@ try:  # Próbujemy się połączyć (try - gdyby coś poszło nie tak)
         arduino = serial.Serial(arduino_port, 9600, timeout=1)
         time.sleep(2)  # Czekamy 2 sekundy - Arduino resetuje się po połączeniu
         print("Połączono z Arduino")
+        arduino_status = "True"  # Ustawiamy status na True
     else:
         print("Nie znaleziono Arduino! Sprawdź połączenie.")
 except Exception as e:  # Jeśli wystąpił jakiś błąd
@@ -132,11 +134,16 @@ mp_draw = mp.solutions.drawing_utils
 # Zmienne dostępne w całym programie
 
 # Aktualny rozkaz dla drona
-RozkazDrona = 0  # 0 = nic nie rób, 1 = pięść, 2 = znak V (peace)
+RozkazDrona = 3  # Domyślnie 3 = brak wykrytej dłoni
+# Możliwe wartości:
+# 0 = dłoń otwarta
+# 1 = pięść
+# 2 = znak V (peace)
+# 3 = brak wykrytej dłoni
 
 # Poprzedni rozkaz - potrzebny do wykrycia zmiany
 # (wysyłamy do Arduino tylko gdy rozkaz się zmieni)
-PoprzedniRozkaz = 0
+PoprzedniRozkaz = 3  # Domyślnie też brak dłoni
 
 # ============= PUNKTY NA DŁONI =============
 # MediaPipe wykrywa 21 punktów na dłoni (0-20)
@@ -246,25 +253,11 @@ def is_finger_up(finger_points, hand_landmarks):
 def detect_gesture(hand_landmarks):
     """
     Wykrywa gest dłoni i ustawia odpowiedni rozkaz
-    
-    Jak to działa:
-    1. Sprawdza pozycję wszystkich palców
-    2. Sprawdza odległości między punktami
-    3. Na podstawie układu palców określa gest
-    4. Ustawia odpowiedni RozkazDrona
-    
-    Po co to robimy:
-    - Chcemy rozpoznać co pokazuje użytkownik
-    - Na podstawie gestów sterujemy dronem
-    
-    Args:
-        hand_landmarks: punkty dłoni z MediaPipe
-    Returns:
-        str: nazwa wykrytego gestu
     """
     global RozkazDrona, PoprzedniRozkaz
     
     # Sprawdzamy które palce są wyprostowane
+    thumb_up = is_finger_up(THUMB_POINTS, hand_landmarks)     # Kciuk
     index_up = is_finger_up(INDEX_POINTS, hand_landmarks)    # Wskazujący
     middle_up = is_finger_up(MIDDLE_POINTS, hand_landmarks)  # Środkowy
     ring_up = is_finger_up(RING_POINTS, hand_landmarks)      # Serdeczny
@@ -297,18 +290,29 @@ def detect_gesture(hand_landmarks):
     PoprzedniRozkaz = RozkazDrona
     
     # Rozpoznajemy gest
-    if avg_distance < 0.2:  # Mała odległość = zaciśnięta pięść
+    wyprostowane_palce = sum([thumb_up, index_up, middle_up, ring_up, pinky_up])
+    
+    # Pięść: większość palców zgięta i mała odległość od nadgarstka
+    if wyprostowane_palce <= 1 and avg_distance < 0.3:
         RozkazDrona = 1
         gesture = "Pięść"
-    elif index_up and middle_up and not ring_up and not pinky_up:  # Znak V (peace)
+        # Tylko gdy wykryto pięść, pokaż dodatkowe info
+        print(f"\nWykryto PIĘŚĆ! Odległość: {avg_distance:.3f}, Wyprostowane palce: {wyprostowane_palce}")
+    # Peace: tylko wskazujący i środkowy wyprostowane
+    elif index_up and middle_up and not ring_up and not pinky_up:
         RozkazDrona = 2
         gesture = "Peace"
-    else:  # Każdy inny układ palców
+    # Dłoń otwarta: większość palców wyprostowana
+    elif wyprostowane_palce >= 3:
         RozkazDrona = 0
-        gesture = "Inna pozycja"
+        gesture = "Dłoń otwarta"
+    else:
+        RozkazDrona = PoprzedniRozkaz
+        gesture = "Nierozpoznany"
     
-    # Jeśli rozkaz się zmienił - wysyłamy do Arduino
+    # Jeśli rozkaz się zmienił - wysyłamy do Arduino i logujemy zmianę
     if RozkazDrona != PoprzedniRozkaz:
+        print(f"\nZmiana gestu -> {gesture} (Rozkaz: {RozkazDrona})")
         send_to_arduino(RozkazDrona)
     
     return gesture
@@ -364,14 +368,20 @@ while True:
                        (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             cv2.putText(img, f"RozkazDrona: {RozkazDrona}", (10, 110),
                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            cv2.putText(img, f"Arduino detected: {arduino_status}", (10, 150),
+                       cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     else:
         # Jeśli nie wykryto dłoni
         PoprzedniRozkaz = RozkazDrona
-        RozkazDrona = 0
+        RozkazDrona = 3  # Ustawiamy na 3 = brak wykrytej dłoni
         if RozkazDrona != PoprzedniRozkaz:
             send_to_arduino(RozkazDrona)
-        # Wyświetlamy aktualny rozkaz (0)
+        # Wyświetlamy informacje
+        cv2.putText(img, f"Gest: Brak dłoni", (10, 30),
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         cv2.putText(img, f"RozkazDrona: {RozkazDrona}", (10, 110),
+                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv2.putText(img, f"Arduino detected: {arduino_status}", (10, 150),
                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     
     # Wyświetlamy obraz
